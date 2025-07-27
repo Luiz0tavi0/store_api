@@ -39,9 +39,13 @@ class ProductUsecase:
 
     async def update(self, id: UUID, body: ProductUpdate) -> ProductUpdateOut:
         update_data = body.model_dump(exclude_none=True)
-        update_data["updated_at"] = update_data.get(
-            "updated_at", datetime.now(timezone.utc)
-        )
+        if "updated_at" in update_data:
+            if isinstance(update_data["updated_at"], str):
+                update_data["updated_at"] = datetime.fromisoformat(
+                    update_data["updated_at"]
+                )
+        else:
+            update_data["updated_at"] = datetime.now(timezone.utc)
 
         result = await self.collection.find_one_and_update(
             filter={"id": id},

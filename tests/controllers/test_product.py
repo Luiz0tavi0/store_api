@@ -130,7 +130,7 @@ async def test_update_product_with_custom_updated_at(
     client, products_url, product_inserted
 ):
     new_updated_at = datetime(
-        randint(2020, 25),
+        randint(2020, 2025),
         randint(1, 12),
         randint(1, 28),
         randint(0, 24),
@@ -150,8 +150,46 @@ async def test_update_product_with_custom_updated_at(
 
     assert response.status_code == 200
     updated = response.json()
+    updated_at_resp_dt = datetime.fromisoformat(
+        updated["updated_at"].replace("Z", "+00:00")
+    )
+    new_updated_at_dt = datetime.fromisoformat(new_updated_at)
+    assert updated_at_resp_dt == new_updated_at_dt
 
-    assert updated["updated_at"] == new_updated_at
+
+async def test_update_product_updated_at_behavior_fixed_date(
+    client, products_url, product_inserted
+):
+    update_payload = {"price": "7500", "quantity": 15}
+    response = await client.patch(
+        f"{products_url}{product_inserted.id}", json=update_payload
+    )
+    assert response.status_code == 200
+    updated = response.json()
+    updated_at = datetime.fromisoformat(updated["updated_at"].replace("Z", "+00:00"))
+    now = datetime.now(timezone.utc)
+    assert abs((now - updated_at).total_seconds()) < 5  # Tolerância de 5 segundos
+
+    # Atualização enviando updated_at fixo (deve aceitar)
+    fixed_updated_at = "2023-07-15T10:30:00+00:00"
+    update_payload_with_fixed = {
+        "price": "7999",
+        "quantity": 20,
+        "updated_at": fixed_updated_at,
+    }
+    response = await client.patch(
+        f"{products_url}{product_inserted.id}", json=update_payload_with_fixed
+    )
+    assert response.status_code == 200
+    updated = response.json()
+
+    updated_at_resp = updated["updated_at"]
+
+    updated_at_resp_dt = datetime.fromisoformat(updated_at_resp.replace("Z", "+00:00"))
+    fixed_updated_at_dt = datetime.fromisoformat(fixed_updated_at)
+    assert (
+        updated_at_resp_dt == fixed_updated_at_dt
+    ), f"Esperado {fixed_updated_at}, mas recebido {updated_at_resp}"
 
 
 async def test_controller_delete_should_return_no_content(
