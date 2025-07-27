@@ -105,7 +105,7 @@ async def test_controller_patch_should_return_not_found_exception(client, produc
     content = response.json()
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert content["detail"] == f"Produto com id '{inexistent_uuid}' não encontrado."
+    assert content["detail"] == f"Produto não encontrado com id : {inexistent_uuid}"
 
 
 async def test_controller_delete_should_return_no_content(

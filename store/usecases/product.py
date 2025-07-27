@@ -1,5 +1,6 @@
 from typing import List
 from uuid import UUID
+from datetime import datetime, timezone
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 import pymongo
 from store.db.mongo import db_client
@@ -38,13 +39,18 @@ class ProductUsecase:
         return [ProductOut(**item) async for item in self.collection.find()]
 
     async def update(self, id: UUID, body: ProductUpdate) -> ProductUpdateOut:
+        update_data = body.model_dump(exclude_none=True)
+        update_data["updated_at"] = update_data.get(
+            "updated_at", datetime.now(timezone.utc)
+        )
+
         result = await self.collection.find_one_and_update(
             filter={"id": id},
-            update={"$set": body.model_dump(exclude_none=True)},
+            update={"$set": update_data},
             return_document=pymongo.ReturnDocument.AFTER,
         )
         if not result:
-            raise NotFoundException(message=f"Produto com id '{id}' não encontrado.")
+            raise NotFoundException(message=f"Produto não encontrado com id : {id}")
 
         return ProductUpdateOut(**result)
 
