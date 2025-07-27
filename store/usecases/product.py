@@ -19,7 +19,6 @@ class ProductUsecase:
 
     async def create(self, body: ProductIn) -> ProductOut:
         existing = await self.collection.find_one({"name": body.name})
-        # ipdb.set_trace()
         if existing:
             raise InsertionException(f"Produto de nome '{body.name}' já existe.")
         product_model = ProductModel(**body.model_dump())
