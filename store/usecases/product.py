@@ -11,7 +11,7 @@ from store.core.exceptions import InsertionException, NotFoundException
 class ProductUsecase:
     def __init__(self) -> None:
         client = db_client.get()
-        database = self.client.get_database()
+        database = client.get_database()
         self.client: "AsyncIOMotorClient" = client  # type: ignore
         self.database: "AsyncIOMotorDatabase" = database  # type: ignore
         self.collection = self.database.get_collection("products")
@@ -43,6 +43,8 @@ class ProductUsecase:
             update={"$set": body.model_dump(exclude_none=True)},
             return_document=pymongo.ReturnDocument.AFTER,
         )
+        if not result:
+            raise NotFoundException(message=f"Produto com id '{id}' não encontrado.")
 
         return ProductUpdateOut(**result)
 

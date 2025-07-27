@@ -95,6 +95,19 @@ async def test_controller_patch_should_return_success(
     }
 
 
+@pytest.mark.usefixtures("products_inserted")
+async def test_controller_patch_should_return_not_found_exception(client, products_url):
+    inexistent_uuid = "4fd7cd35-a3a0-4c1f-a78d-d24aa81e7dca"
+    response = await client.patch(
+        f"{products_url}{inexistent_uuid}", json={"price": "1.159"}
+    )
+
+    content = response.json()
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert content["detail"] == f"Produto com id '{inexistent_uuid}' não encontrado."
+
+
 async def test_controller_delete_should_return_no_content(
     client, products_url, product_inserted
 ):
