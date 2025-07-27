@@ -5,16 +5,22 @@ import pymongo
 from store.db.mongo import db_client
 from store.models.product import ProductModel
 from store.schemas.product import ProductIn, ProductOut, ProductUpdate, ProductUpdateOut
-from store.core.exceptions import NotFoundException
+from store.core.exceptions import InsertionException, NotFoundException
 
 
 class ProductUsecase:
     def __init__(self) -> None:
-        self.client: AsyncIOMotorClient = db_client.get()
-        self.database: AsyncIOMotorDatabase = self.client.get_database()
+        client = db_client.get()
+        database = self.client.get_database()
+        self.client: "AsyncIOMotorClient" = client  # type: ignore
+        self.database: "AsyncIOMotorDatabase" = database  # type: ignore
         self.collection = self.database.get_collection("products")
 
     async def create(self, body: ProductIn) -> ProductOut:
+        existing = await self.collection.find_one({"name": body.name})
+        # ipdb.set_trace()
+        if existing:
+            raise InsertionException(f"Produto de nome '{body.name}' já existe.")
         product_model = ProductModel(**body.model_dump())
         await self.collection.insert_one(product_model.model_dump())
 

@@ -5,8 +5,7 @@ from pydantic import UUID4, BaseModel, Field, model_validator
 
 
 class BaseSchemaMixin(BaseModel):
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class OutSchema(BaseModel):

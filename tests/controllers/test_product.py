@@ -7,7 +7,6 @@ from fastapi import status
 
 async def test_controller_create_should_return_success(client, products_url):
     response = await client.post(products_url, json=product_data())
-
     content = response.json()
 
     del content["created_at"]
@@ -21,6 +20,19 @@ async def test_controller_create_should_return_success(client, products_url):
         "price": "8.500",
         "status": True,
     }
+
+
+async def test_controller_create_should_return_fail(
+    client, products_url, product_inserted
+):
+    product_repeated = product_data()
+    product_repeated["name"] = product_inserted.name
+    response = await client.post(products_url, json=product_repeated)
+    content = response.json()
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert content["detail"] == (
+        f"Produto de nome '{product_repeated['name']}' já existe."
+    )
 
 
 async def test_controller_get_should_return_success(

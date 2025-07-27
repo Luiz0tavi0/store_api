@@ -8,4 +8,5 @@ services:
     restart: on-failure
     environment:
       - MONGODB_ADVERTISED_HOSTNAME=localhost
-      - ALLOW_EMPTY_PASSWORD=yes
+      - MONGODB_ROOT_USER=admin
+      - MONGODB_ROOT_PASSWORD=senha123
