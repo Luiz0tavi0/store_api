@@ -1,3 +1,4 @@
+from decimal import Decimal
 from random import randint
 from typing import List
 from datetime import datetime, timedelta, timezone
@@ -209,3 +210,121 @@ async def test_controller_delete_should_return_not_found(client, products_url):
     assert response.json() == {
         "detail": "Product not found with filter: 4fd7cd35-a3a0-4c1f-a78d-d24aa81e7dca"
     }
+
+
+@pytest.mark.usefixtures("products_inserted")
+async def test_controller_query_with_price_filter_should_return_success(
+    client: AsyncClient, products_url: str
+):
+    response = await client.get(
+        products_url, params={"min_price": "5.000", "max_price": "8.000"}
+    )
+
+    assert response.status_code == 200
+    products = response.json()
+
+    for product in products:
+        assert "." in product["price"]
+        price_value = float(product["price"].replace(".", ""))
+        assert 5000 <= price_value <= 8000
+
+
+@pytest.mark.usefixtures("products_inserted")
+async def test_price_filter_with_valid_range(client: AsyncClient, products_url: str):
+    """Testa filtro com range válido"""
+    response = await client.get(
+        products_url, params={"min_price": "5.000", "max_price": "8.000"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    products = response.json()
+    assert len(products) == 5  # Iphone 8 Pro, 9 Pro Max, 10 Pro Max
+
+    for product in products:
+        price = Decimal(product["price"].replace(".", ""))
+        assert 5000 <= price <= 8000
+        assert product["name"] in [
+            "Iphone 8 Pro",
+            "Iphone 9 Pro Max",
+            "Iphone 10 Pro Max",
+            "Iphone 12 Pro Max",
+            "Iphone 13 Pro Max",
+        ]
+
+
+@pytest.mark.usefixtures("products_inserted")
+async def test_price_filter_with_only_min(client: AsyncClient, products_url: str):
+    response = await client.get(products_url, params={"min_price": "7.000"})
+
+    assert response.status_code == status.HTTP_200_OK
+    products = response.json()
+    assert len(products) == 5
+
+
+@pytest.mark.usefixtures("products_inserted")
+async def test_price_filter_with_only_max(client: AsyncClient, products_url: str):
+    response = await client.get(products_url, params={"max_price": "6.570"})
+
+    assert response.status_code == status.HTTP_200_OK
+    products = response.json()
+    assert len(products) == 3
+
+
+@pytest.mark.usefixtures("products_inserted")
+async def test_price_filter_with_exact_value(client: AsyncClient, products_url: str):
+    response = await client.get(
+        products_url, params={"min_price": "7.545", "max_price": "7.545"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    products = response.json()
+    assert len(products) == 1
+    assert products[0]["name"] == "Iphone 10 Pro Max"
+    assert products[0]["price"] == "7.545"
+
+
+@pytest.mark.usefixtures("products_inserted")
+async def test_price_filter_with_invalid_format(client: AsyncClient, products_url: str):
+    response = await client.get(
+        products_url, params={"min_price": "5000", "max_price": "8000"}
+    )
+    products = response.json()
+    assert len(products) == 0
+    assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.usefixtures("products_inserted")
+async def test_price_filter_with_non_existent_range(
+    client: AsyncClient, products_url: str
+):
+    response = await client.get(
+        products_url, params={"min_price": "20.000", "max_price": "30.000"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    products = response.json()
+    assert len(products) == 0
+
+
+@pytest.mark.usefixtures("products_inserted")
+async def test_price_filter_with_swapped_values(client: AsyncClient, products_url: str):
+    response = await client.get(
+        products_url, params={"min_price": "8.000", "max_price": "5.000"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    products = response.json()
+    assert len(products) == 0
+
+
+@pytest.mark.usefixtures("products_inserted")
+async def test_price_filter_with_status_true(client: AsyncClient, products_url: str):
+    response = await client.get(
+        products_url,
+        params={"min_price": "6.201", "max_price": "8.040"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    products = response.json()
+    assert len(products) == 4
+    assert all(product["status"] for product in products)

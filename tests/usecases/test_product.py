@@ -10,7 +10,6 @@ from store.usecases.product import product_usecase
 async def test_usecases_create_should_return_success(product_in):
     result = await product_usecase.create(body=product_in)
 
-    # ipdb.set_trace()
     assert isinstance(result, ProductOut)
     assert result.name == "Iphone 14 Pro Max"
 

@@ -1,5 +1,6 @@
+from decimal import Decimal
 from typing import List, Optional
-from fastapi import APIRouter, Body, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, status
 from pydantic import UUID4
 from store.core.exceptions import InsertionException, NotFoundException
 
@@ -14,10 +15,8 @@ async def post(
     body: ProductIn = Body(...), usecase: ProductUsecase = Depends()
 ) -> ProductOut:
     try:
-        # ipdb.set_trace()
         return await usecase.create(body=body)
     except InsertionException as exc:
-        # ipdb.set_trace()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=exc.message)
 
 
@@ -32,8 +31,12 @@ async def get(
 
 
 @router.get(path="/", status_code=status.HTTP_200_OK)
-async def query(usecase: ProductUsecase = Depends()) -> List[ProductOut]:
-    return await usecase.query()
+async def query(
+    min_price: Optional[Decimal] = Query(None, description="Minimum price filter"),
+    max_price: Optional[Decimal] = Query(None, description="Maximum price filter"),
+    usecase: ProductUsecase = Depends(),
+) -> List[ProductOut]:
+    return await usecase.query(min_price=min_price, max_price=max_price)
 
 
 @router.patch(path="/{id}", status_code=status.HTTP_200_OK)
